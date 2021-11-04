@@ -1,4 +1,4 @@
-Shader "Tutorials/RenderPipeline/Chapter1/Lambert"
+Shader "Lession01/Lambert"
 {
     SubShader
     {

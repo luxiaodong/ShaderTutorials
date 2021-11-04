@@ -1,4 +1,4 @@
-Shader "Tutorials/RenderPipeline/Chapter1/RampTex"
+Shader "Lession01/RampTex"
 {
     Properties {
 		_RampTex ("RampTex", 2D) = "white" {}
