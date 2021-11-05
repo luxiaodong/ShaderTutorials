@@ -1,4 +1,4 @@
-Shader "Tutorials/RenderPipeline/Chapter3/FakeLight"
+Shader "Lession03/FakeLight"
 {
     Properties {
         _Diffuse ("Diffuse", 2D) = "white" {}
