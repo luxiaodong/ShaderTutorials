@@ -68,7 +68,8 @@ Shader "Custom/Shadow/PlaneShadow"
  
             struct v2f
             {
-                float4 vertex : SV_POSITION;
+                float4 positionCS : SV_POSITION;
+                float2 uv : TEXCOORD0;
             };
 
             float3 _ShadowColor;
@@ -78,17 +79,31 @@ Shader "Custom/Shadow/PlaneShadow"
             {
                 v2f o;
                 Light light = GetMainLight();
-                float3 lightDir = light.direction;
+                float3 lightDir = - light.direction;
                 float4 worldPos = mul(unity_ObjectToWorld, i.vertex);
 
-                float t = (_Plane.w - dot(worldPos.xyz, _Plane.xyz)) / dot(lightDir.xyz, _Plane.xyz);
-                worldPos.xyz = worldPos.xyz + t*lightDir.xyz;
-                o.vertex = mul(unity_MatrixVP, worldPos);
+                float t1 = (_Plane.w - dot(worldPos.xyz, _Plane.xyz)) / dot(lightDir.xyz, _Plane.xyz);
+                float t2 = (_Plane.w - dot(worldPos.xyz, _Plane.xyz)) / dot(_Plane.xyz, _Plane.xyz);
+
+                if(t1 > 0)
+                {
+                    worldPos.xyz = worldPos.xyz + t1*lightDir.xyz;
+                }
+                else
+                {
+                    worldPos.xyz = worldPos.xyz + t2*_Plane.xyz;
+                }
+
+                o.positionCS = mul(unity_MatrixVP, worldPos);
+                o.uv = float2(t1, t2);
                 return o;
             }
 
             float4 frag (v2f i) : SV_Target
             {
+                float t1 = i.uv.x;
+                float t2 = i.uv.y;
+                clip(t1);
                 return float4(_ShadowColor, 1);
             }
 
