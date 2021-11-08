@@ -2,8 +2,9 @@ Shader "Custom/Shadow/PlaneShadow"
 {
     Properties
     {
-        _ShadowColor("Color", color) = (0,0,0)
         _Plane("Plane", vector) = (0,1,0,1)
+        _ShadowColor("Color", color) = (0,0,0)
+        _ShadowEdge("ShadowEdge", float) = 1
     }
 
     SubShader
@@ -53,6 +54,7 @@ Shader "Custom/Shadow/PlaneShadow"
 
             ZWrite Off
             Cull Back
+            Blend SrcAlpha  OneMinusSrcAlpha
 
             HLSLPROGRAM
             #pragma vertex vert
@@ -72,27 +74,33 @@ Shader "Custom/Shadow/PlaneShadow"
                 float2 uv : TEXCOORD0;
             };
 
-            float3 _ShadowColor;
             float4 _Plane;
+            float3 _ShadowColor;
+            float _ShadowEdge;
 
             v2f vert (a2v i)
             {
                 v2f o;
                 Light light = GetMainLight();
                 float3 lightDir = - light.direction;
-                float4 worldPos = mul(unity_ObjectToWorld, i.vertex);
-                float t = (_Plane.w - dot(worldPos.xyz, _Plane.xyz)) / dot(lightDir.xyz, _Plane.xyz);
-                worldPos.xyz = worldPos.xyz + t*lightDir.xyz;
-                o.positionCS = mul(unity_MatrixVP, worldPos);
-                o.uv = float2(t, t);
+                float4 positionWS = mul(unity_ObjectToWorld, i.vertex);
+                float t = (_Plane.w - dot(positionWS.xyz, _Plane.xyz)) / dot(lightDir.xyz, _Plane.xyz);
+                float3 shadowWS = positionWS + t*lightDir.xyz;
+                o.positionCS = mul(unity_MatrixVP, float4(shadowWS,1));
+
+                float3 shadowOriginWS = float3(0,0,0);
+                float distance = length(shadowWS.xyz - shadowOriginWS);
+                o.uv = float2(t, distance);
                 return o;
             }
 
             float4 frag (v2f i) : SV_Target
             {
                 float t = i.uv.x;
+                float distance = i.uv.y;
                 clip(t);
-                return float4(_ShadowColor, 1);
+                float a = pow(2, 3*(_ShadowEdge - distance));
+                return float4(_ShadowColor, a);
             }
 
             ENDHLSL
