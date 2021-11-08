@@ -7,7 +7,7 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: planeShadow
+  m_Name: PlaneShadow
   m_Shader: {fileID: 4800000, guid: b0f0c2970d138497897673152bbc7c06, type: 3}
   m_ShaderKeywords: 
   m_LightmapFlags: 4
@@ -53,6 +53,7 @@ Material:
     - _BumpScale: 1
     - _Cull: 2
     - _Cutoff: 0.5
+    - _DirectionalLight: 0
     - _DstBlend: 0
     - _EnvironmentReflections: 1
     - _GlossMapScale: 0

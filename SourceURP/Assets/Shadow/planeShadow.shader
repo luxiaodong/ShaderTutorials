@@ -5,6 +5,7 @@ Shader "Custom/Shadow/PlaneShadow"
         _Plane("Plane", vector) = (0,1,0,1)
         _ShadowColor("Color", color) = (0,0,0)
         _ShadowEdge("ShadowEdge", float) = 1
+        [Toggle(_DIRECTIONAL_LIGHT)] _DirectionalLight ("_DIRECTIONAL_LIGHT", Float) = 0
     }
 
     SubShader
@@ -63,6 +64,8 @@ Shader "Custom/Shadow/PlaneShadow"
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
 
+            #pragma shader_feature _DIRECTIONAL_LIGHT
+
             struct a2v
             {
                 float4 vertex : POSITION;
@@ -81,9 +84,16 @@ Shader "Custom/Shadow/PlaneShadow"
             v2f vert (a2v i)
             {
                 v2f o;
+                float4 positionWS = mul(unity_ObjectToWorld, i.vertex);
+
+#ifdef _DIRECTIONAL_LIGHT
                 Light light = GetMainLight();
                 float3 lightDir = - light.direction;
-                float4 positionWS = mul(unity_ObjectToWorld, i.vertex);
+#else
+                float3 spotLightWS = float3(0, 4, -1);
+                float3 lightDir = normalize(positionWS.xyz - spotLightWS);
+#endif
+
                 float t = (_Plane.w - dot(positionWS.xyz, _Plane.xyz)) / dot(lightDir.xyz, _Plane.xyz);
                 float3 shadowWS = positionWS + t*lightDir.xyz;
                 o.positionCS = mul(unity_MatrixVP, float4(shadowWS,1));
@@ -99,7 +109,7 @@ Shader "Custom/Shadow/PlaneShadow"
                 float t = i.uv.x;
                 float distance = i.uv.y;
                 clip(t);
-                float a = pow(2, 3*(_ShadowEdge - distance));
+                float a = pow(2, 2*(_ShadowEdge - distance));
                 return float4(_ShadowColor, a);
             }
 
