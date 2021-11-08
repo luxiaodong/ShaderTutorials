@@ -81,19 +81,9 @@ Shader "Custom/Shadow/PlaneShadow"
                 Light light = GetMainLight();
                 float3 lightDir = - light.direction;
                 float4 worldPos = mul(unity_ObjectToWorld, i.vertex);
-
                 float t = (_Plane.w - dot(worldPos.xyz, _Plane.xyz)) / dot(lightDir.xyz, _Plane.xyz);
-
                 worldPos.xyz = worldPos.xyz + t*lightDir.xyz;
-
                 o.positionCS = mul(unity_MatrixVP, worldPos);
-
-#if UNITY_REVERSED_Z
-    o.positionCS.z = min(o.positionCS.z, o.positionCS.w * UNITY_NEAR_CLIP_VALUE);
-#else
-    o.positionCS.z = max(o.positionCS.z, o.positionCS.w * UNITY_NEAR_CLIP_VALUE);
-#endif
-
                 o.uv = float2(t, t);
                 return o;
             }
