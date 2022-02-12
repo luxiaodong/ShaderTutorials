@@ -3,10 +3,10 @@ Shader "Water/Single"
     Properties {
 		_RampTex ("RampTex", 2D) = "white" {}
 
-        _Amp ("Amp", range(0,1)) = 1.0
+        _Amp ("Amp", float) = 1.0
         _Length ("Length", float) = 1.0
         _Freq ("Freq", float) = 1.0
-        _Phase ("Phase", float) = 1.0 //假设速度.
+        _Speed ("Speed", float) = 1.0 //假设速度.
         _DirX ("DirX", float) = 1.0
         _DirY ("DirY", float) = 0
 	}
@@ -43,7 +43,7 @@ Shader "Water/Single"
             float _Amp;
             float _Freq;
             float _Length;
-            float _Phase;
+            float _Speed;
             float _DirX;
             float _DirY;
 
@@ -53,8 +53,9 @@ Shader "Water/Single"
                 float y = pos.y;
                 float z = pos.z;
                 float f = 3.1415926*2.0/_Length;
-                float phase = _Time.y*_Phase; //速度1.0
-                y = _Amp * sin( f*(x - phase) );
+                float sita = f*(x - _Speed*_Time.y);
+                x = x + _Amp * cos(sita);
+                y = _Amp * sin(sita);
                 return float4(x, y, z, 1.0f);
             }
 
@@ -65,8 +66,8 @@ Shader "Water/Single"
                 float y = pos.y;
                 float z = pos.z;
                 float f = 3.1415926*2.0/_Length;
-                float phase = _Time.y*_Phase; //速度1.0
-                float3 tangent = normalize(float3(1, _Amp * cos( f*(x - phase) ) * f ,0));
+                float sita = f*(x - _Speed*_Time.y);
+                float3 tangent = normalize(float3(1 - _Amp * sin(sita) * f, _Amp * cos(sita) * f ,0));
                 return cross(tangent, float3(0,0,-1));
             }
 

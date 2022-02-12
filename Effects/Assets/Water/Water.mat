@@ -68,7 +68,7 @@ Material:
     - _AAScale: 1
     - _Alpha: 1
     - _AlphaClip: 0
-    - _Amp: 0.11
+    - _Amp: 10
     - _AmpScale: 0.615
     - _Blend: 0
     - _BumpScale: 1
@@ -84,15 +84,16 @@ Material:
     - _GlossMapScale: 0
     - _Glossiness: 0
     - _GlossyReflections: 0
-    - _Length: 5
+    - _Length: 100
     - _Metallic: 0
     - _OcclusionStrength: 1
-    - _Phase: 0
+    - _Phase: 50
     - _QueueOffset: 0
     - _ReceiveShadows: 1
     - _Smoothness: 0.5
     - _SmoothnessTextureChannel: 0
     - _SpecularHighlights: 1
+    - _Speed: 50
     - _SrcBlend: 1
     - _Surface: 0
     - _TestScale: 0.377
