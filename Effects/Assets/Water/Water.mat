@@ -77,14 +77,14 @@ Material:
     - _Cutoff: 0.5
     - _DirScale: 1
     - _DirX: 1
-    - _DirY: 0
+    - _DirY: 1
     - _DstBlend: 0
     - _EnvironmentReflections: 1
     - _Freq: 1
     - _GlossMapScale: 0
     - _Glossiness: 0
     - _GlossyReflections: 0
-    - _Length: 100
+    - _Length: 50
     - _Metallic: 0
     - _OcclusionStrength: 1
     - _Phase: 50
