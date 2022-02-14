@@ -21,7 +21,7 @@ Material:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: Water
-  m_Shader: {fileID: 4800000, guid: dea14b3325db34746bb0da3d5d6b1938, type: 3}
+  m_Shader: {fileID: 4800000, guid: 694355e4aa8004c8db1a45de22f34e94, type: 3}
   m_ShaderKeywords: 
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
@@ -58,7 +58,7 @@ Material:
         m_Offset: {x: 0, y: 0}
     - _RampTex:
         m_Texture: {fileID: 2800000, guid: 783c692d9d2cb45adb1161c267fd73ad, type: 3}
-        m_Scale: {x: 1, y: 1}
+        m_Scale: {x: 10, y: 10}
         m_Offset: {x: 0, y: 0}
     - _SpecGlossMap:
         m_Texture: {fileID: 0}
@@ -68,14 +68,14 @@ Material:
     - _AAScale: 1
     - _Alpha: 1
     - _AlphaClip: 0
-    - _Amp: 10
-    - _AmpScale: 0.615
+    - _Amp: 3.98
+    - _AmpScale: 0
     - _Blend: 0
     - _BumpScale: 1
     - _Clipping: 0
     - _Cull: 2
     - _Cutoff: 0.5
-    - _DirScale: 1
+    - _DirScale: 0
     - _DirX: 1
     - _DirY: 1
     - _DstBlend: 0
@@ -102,13 +102,13 @@ Material:
     - _XXX: 0.668
     - _ZWrite: 1
     m_Colors:
-    - _Amp: {r: 1, g: 1, b: 1, a: 1}
+    - _Amp: {r: 3.98, g: 0.797, b: 2.2, a: 3}
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
     - _Color: {r: 1, g: 1, b: 1, a: 1}
-    - _DirX: {r: 0, g: 0, b: 0, a: 0}
-    - _DirY: {r: 0, g: 0, b: 0, a: 0}
+    - _DirX: {r: 1, g: 1, b: 1, a: 1}
+    - _DirY: {r: 0.8, g: 0.6, b: 1.3, a: 1.5}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
     - _Freq: {r: 0, g: 0, b: 0, a: 0}
-    - _Length: {r: 0, g: 0, b: 0, a: 0}
-    - _Phase: {r: 0, g: 0, b: 0, a: 0}
+    - _Length: {r: 50, g: 20, b: 30, a: 40}
+    - _Phase: {r: 1, g: 2, b: 2, a: 0}
     - _SpecColor: {r: 0.2, g: 0.2, b: 0.2, a: 1}
