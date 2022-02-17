@@ -1,6 +1,7 @@
 Shader "SDF/RayMarching"
 {
     Properties {
+        // _CameraPos ("CameraPoos", vector) = (0.0, 10, 0.0, 0.0)
 	}
 
     SubShader
@@ -29,8 +30,6 @@ Shader "SDF/RayMarching"
                 float2 uv : TEXCOORD2;
             };
 
-            float _Raidus;
-
             v2f vert(a2v i)
             {
                 v2f o;
@@ -41,10 +40,27 @@ Shader "SDF/RayMarching"
                 return o;
             }
 
+            float sd_circle(float3 p)
+            {
+                float4 s = float4(0,0,0,0.5); //球的坐标和半径
+                return length(p-s.xyz)-s.w;
+            }
+
+            float sd_heart(float3 p)
+            {
+                float r = 0.5;
+                float x = abs(p.x);
+                float y = p.y;
+                float z = p.z;
+                y = 0.1 + 1.2*y - x*sqrt(max((1.5-x)/2, 0));               
+                z *= 2 - y;
+                return length(float3(x,y,z)) - 2.5;
+            }
+
             float getDistance(float3 p)
             {
-                float4 s = float4(0,0,0,2.5); //球的坐标和半径
-                float d2s = length(p-s.xyz)-s.w;
+                float d2s = sd_circle(p);
+                // float d2s = sd_heart(p);
                 float d2p = p.y;
                 float d = min(d2s, d2p);
                 return d;
@@ -84,12 +100,27 @@ Shader "SDF/RayMarching"
                 return dist*ndotl;
             }
 
+            float3 convertPos(float2 uv)
+            {
+                uv = 2*uv - 1;
+                float r = 0.5;
+                float d = length(uv);
+                if(d < 0.5)
+                {
+                    return float3(uv.x, sqrt(r*r - d*d), uv.y);
+                }
+
+                return float3(uv.x, 0, uv.y);
+            }
+
             float4 frag (v2f i) : SV_TARGET 
             {
+                float3 pos = convertPos(i.uv);
                 float3 lightPos = _WorldSpaceCameraPos; //相机的位置当光源的位置
-                float color = getLight(i.positionWS, lightPos);
+                float color = getLight(pos, lightPos);
                 return float4(color, color, color, 1.0f);
 
+                // float3 color = i.positionWS.y;
                 // float3 color = normalize(i.positionWS);
                 // float3 color = getNormal(i.positionWS);
                 // return float4(color, 1.0);
