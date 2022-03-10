@@ -1,7 +1,6 @@
-Shader "EdgeCollapse/FlatWireFrame"
+Shader "EdgeCollapse/Flat"
 {
     Properties {
-		_RampTex ("RampTex", 2D) = "white" {}
 	}
 
     SubShader
@@ -33,15 +32,9 @@ Shader "EdgeCollapse/FlatWireFrame"
 
             struct v2g
             {
-                float4 positionCS : SV_POSITION;
-                float3 positionWS : TEXCOORD0;
-                float3 normalWS : TEXCOORD1;
+                v2f data;
+                float3 barycentricCoordinates : TEXCOOR4;
             };
-
-
-            TEXTURE2D(_RampTex);
-            SAMPLER(sampler_RampTex);
-            float4 _RampTex_ST;
 
             v2f vert(a2v i)
             {
@@ -54,7 +47,7 @@ Shader "EdgeCollapse/FlatWireFrame"
             }
 
             [maxvertexcount(3)]
-            void geome(triangle v2g i[3], inout TriangleStream<v2g> stream)
+            void geome(triangle v2f i[3], inout TriangleStream<v2f> stream)
             {
                 float3 p0 = i[0].positionWS.xyz;
                 float3 p1 = i[1].positionWS.xyz;
@@ -73,13 +66,6 @@ Shader "EdgeCollapse/FlatWireFrame"
 
             float4 frag (v2f i) : SV_TARGET 
             {
-                //向量
-                Light light = GetMainLight();
-                float3 ndotl = max(0, dot(i.normalWS, light.direction));
-
-                //各项
-                float3 texColor = SAMPLE_TEXTURE2D(_RampTex, sampler_RampTex, i.uv);
-                float3 color = texColor * ndotl;
 
                 //世界坐标系下的偏导数
                 float3 dpdx = ddx(i.positionWS);
@@ -87,7 +73,7 @@ Shader "EdgeCollapse/FlatWireFrame"
                 float3 normal = cross(dpdx, dpdy);
 
                 // return float4( normalize(normal) , 1.0f);
-                return float4( normalize(i.normalWS) , 1.0f);
+                return float4( normalize(i.normalWS.xyz) , 1.0f);
             }
 
 			ENDHLSL
