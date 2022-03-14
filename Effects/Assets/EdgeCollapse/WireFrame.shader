@@ -1,6 +1,8 @@
 Shader "EdgeCollapse/WireFrame"
 {
     Properties {
+        _WireColor ("WireColor", Color) = (0,0,0)
+        _WireWidth ("WireWidth", Range(1,5)) = 1
 	}
 
     SubShader
@@ -31,6 +33,9 @@ Shader "EdgeCollapse/WireFrame"
                 float3 barycentricCoordinates : TEXCOOR0;
             };
 
+            float3 _WireColor;
+            float _WireWidth;
+
             v2g vert(a2v i)
             {
                 v2g o;
@@ -55,14 +60,14 @@ Shader "EdgeCollapse/WireFrame"
                 stream.RestartStrip();
             }
 
-
             float4 frag (g2f i) : SV_TARGET 
             {
                 float minBary = min(i.barycentricCoordinates.x , min(i.barycentricCoordinates.y, i.barycentricCoordinates.z));
-                // float delta = abs(ddx(minBary) + abs(ddy(minBary)));
-                float delta = fwidth(minBary);
-                float c = smoothstep(0, 2*delta, minBary);
-                return float4(c, c, c, 1.0f);
+                float delta = fwidth(minBary); // float delta = abs(ddx(minBary) + abs(ddy(minBary)));
+                float c = smoothstep(0, delta*_WireWidth, minBary);
+                // return float4(c,c,c,1.0f);
+                float3 color = lerp(_WireColor, float3(1,1,1), c);
+                return float4(color, 1.0);
             }
 
 			ENDHLSL
