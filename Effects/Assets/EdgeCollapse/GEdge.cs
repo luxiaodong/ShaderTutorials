@@ -76,24 +76,9 @@ public class GEdge
 			Debug.Log(invMat);
 			// Debug.Log(m_pt.ToString("f4"));
 			// Debug.Log("xyzw:"+x+","+y+","+z+","+w);
-
 			Debug.Log(derMat*invMat);
-
-			TestInv();
 			Debug.Log("=====================");
+			GMatrixOperate.Test();
 		}
-
-	}
-
-	public void TestInv()
-	{
-		Debug.Log("=====================");
-		Matrix4x4 a = Matrix4x4.zero;
-		a[0,0] = 2;
-		a[1,1] = 4;
-		a[2,2] = 8;
-		a[3,3] = 1;
-		Matrix4x4 b = a.inverse;
-		Debug.Log(b);
 	}
 }
