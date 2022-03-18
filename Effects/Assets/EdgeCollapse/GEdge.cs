@@ -65,6 +65,6 @@ public class GEdge
 		float z = m_mat[2,0]*m_pt.x + m_mat[2,1]*m_pt.y + m_mat[2,2]*m_pt.z + m_mat[2,3];
 		float w = m_mat[3,0]*m_pt.x + m_mat[3,1]*m_pt.y + m_mat[3,2]*m_pt.z + m_mat[3,3];
 		m_cost = m_pt.x*x + m_pt.y*y + m_pt.z*z + w;
-		m_pt = m_pt*0.01f;
+		// m_pt = m_pt*0.01f;
 	}
 }

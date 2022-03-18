@@ -83,7 +83,8 @@ public class EdgeCollapse : MonoBehaviour
 
 	Vector3 GetVertices(int index)
     {
-    	return m_verticesList[index]*100.0f;
+    	// return m_verticesList[index]*100.0f;
+    	return m_verticesList[index];
     }
 
     void CreateVertexMatrix()
@@ -103,6 +104,11 @@ public class EdgeCollapse : MonoBehaviour
     		tri.CalculateMatrix(p0, p1, p2);
     		m_triangleList.Add(tri);
 
+    		if(index0 == 325 || index1 == 325 || index2 == 325)
+    		{
+    			Debug.Log("=====> " +index0+","+index1+","+index2);
+    		}
+
     		m_vertexList[index0].m_triangles.Add(tri);
     		m_vertexList[index1].m_triangles.Add(tri);
     		m_vertexList[index2].m_triangles.Add(tri);
@@ -116,7 +122,7 @@ public class EdgeCollapse : MonoBehaviour
 
     void SelectValidEdge()
     {
-    	int threshold = 3;
+    	int threshold = 1;
 
     	for (int i = 0; i < m_trianglesCount; i++)
     	{
@@ -146,8 +152,6 @@ public class EdgeCollapse : MonoBehaviour
 
   	void AppendEdge(int index1, int index2)
     {
-    	if(m_edgeList.Count > 10) return ;
-
     	foreach (GEdge edge in m_edgeList)
     	{
     		if(edge.IsSame(index1, index2)) return ;
@@ -279,39 +283,35 @@ public class EdgeCollapse : MonoBehaviour
 		m_edgeArray[j].m_index = j;
     }
 
-    void TestCode()
-    {
-    	Debug.Log(m_edgeArray[0].m_cost);
-
-    	GEdge edge = m_edgeArray[0];
-    	edge.m_cost = 10.0f;
-
-    	Debug.Log(m_edgeArray[0].m_cost);
-    }
-
     // ========================================================
 
     void UpdateMesh()
     {
-    	// 从堆中删除最小的边
-    	m_edge = m_edgeArray[0];  	
+		// 从堆中删除最小的边
+    	m_edge = m_edgeArray[0];
     	m_edgeList.Remove(m_edge);
+
+    	Debug.Log("m_edge : " + m_edge.m_index1 + "," + m_edge.m_index2);
+    	Debug.Log(m_edge.m_pt.ToString("f4"));
+    	Debug.Log(m_verticesList[0].ToString("f4"));
+    	if(true) return ;
 
     	// 删掉两个顶点
     	m_vertexList[m_edge.m_index1].m_isObsolete = true;
     	m_vertexList[m_edge.m_index2].m_isObsolete = true;
 
-    	// 新增一个顶点
-		m_verticesList.Add(m_edge.m_pt);
+		// 新增一个顶点
 		int newPtIndex = m_verticesList.Count;
+		m_verticesList.Add(m_edge.m_pt);
 		GVertex vertex = new GVertex();
 		m_vertexList.Add(vertex);
 		vertex.m_mat = m_edge.m_mat; // 新的顶点代价矩阵用边的代价矩阵
 		// vertex.m_triangles // 新顶点关联哪些三角形
 
-    	// // 找出受影响的边 和 顶点
+		// 找出受影响的边 和 顶点
     	m_effectEdgeList.Clear();
     	m_effectTrianglesIndexList.Clear();
+    	m_effectTrianglesIndexList.Add(newPtIndex);
     	foreach (GEdge edge in m_edgeList)
     	{
     		if( edge.IsEffected(m_edge.m_index1, m_edge.m_index2) )
@@ -349,6 +349,61 @@ public class EdgeCollapse : MonoBehaviour
     		}
     	}
 
+		Debug.Log("effectEdgeList");
+    	foreach (GEdge edge in m_effectEdgeList)
+    	{
+    		Debug.Log("edge : " + edge.m_index1 + "," + edge.m_index2);
+    	}
+
+    	Debug.Log("effectTrianglesIndexList");
+    	foreach (int i in m_effectTrianglesIndexList)
+    	{
+    		Debug.Log("effectTrianglesIndexList :" + i);
+    	}
+
+    	Debug.Log("========GTriangle in vertex list=========");
+
+    	// 找出受影响的三角形
+    	m_effectTriangleList.Clear();
+    	m_effectTriangleList = m_vertexList[m_edge.m_index1].m_triangles;
+
+    	foreach (GTriangle tri in m_vertexList[m_edge.m_index2].m_triangles)
+    	{
+    		bool isExist = false;
+    		for(int i = 0; i < m_effectTriangleList.Count; ++i)
+    		{
+    			if(m_effectTriangleList[i] == tri)
+    			{
+    				isExist = true;
+    			}
+    		}
+
+    		if(isExist == false)
+    		{
+    			m_effectTriangleList.Add(tri);
+    		}
+    	}
+
+    	// 删掉坍塌的三角形, 以及索引
+    	for(int i = 0; i < m_effectTriangleList.Count; ++i)
+    	{
+    		GTriangle tri = m_effectTriangleList[i];
+    		if(tri.IsCollapse(m_edge.m_index1, m_edge.m_index2) == true)
+    		{
+    			m_vertexList[tri.m_index0].m_triangles.Remove(tri);
+				m_vertexList[tri.m_index1].m_triangles.Remove(tri);
+				m_vertexList[tri.m_index2].m_triangles.Remove(tri);
+    			m_triangleList.Remove(tri);
+    			m_effectTriangleList.Remove(tri);
+    		}
+    	}
+
+    	Debug.Log("effectTriangleList");
+    	foreach (GTriangle tri in m_effectTriangleList)
+    	{
+    		Debug.Log("tri : " + tri.m_index0 + "," + tri.m_index1 + "," + tri.m_index2);
+    	}
+
     	// 修改边的值
     	foreach (GEdge edge in m_effectEdgeList)
     	{
@@ -365,110 +420,89 @@ public class EdgeCollapse : MonoBehaviour
     		if(edge.m_index1 == edge.m_index2) Debug.LogError("error.");
     	}
 
-    	// 找出受影响的三角形
-    	m_effectTriangleList.Clear();
-    	List<GTriangle> triangles;
-    	triangles = m_vertexList[m_edge.m_index1].m_triangles;
-    	foreach (GTriangle tri in triangles)
+    	Debug.Log("effectEdgeList changed");
+    	foreach (GEdge edge in m_effectEdgeList)
     	{
-    		if(tri.IsCollapse(m_edge.m_index1, m_edge.m_index2) == true)
-    		{
-    			m_triangleList.Remove(tri); //删掉坍塌的
-    			m_vertexList[tri.m_index0].m_triangles.Remove(tri);
-    			m_vertexList[tri.m_index1].m_triangles.Remove(tri);
-    			m_vertexList[tri.m_index2].m_triangles.Remove(tri);
-    		}
-    		else
-    		{
-    			m_effectTriangleList.Add(tri);
-    		}
+    		Debug.Log("edge : " + edge.m_index1 + "," + edge.m_index2);
     	}
 
-    	// triangles = m_vertexList[m_edge.m_index2].m_triangles;
-    	// foreach (GTriangle tri in triangles)
-    	// {
-    	// 	if(tri.IsCollapse(m_edge.m_index1, m_edge.m_index2) == true)
-    	// 	{
-    	// 		m_triangleList.Remove(tri);
-    	// 		m_vertexList[tri.m_index0].m_triangles.Remove(tri);
-    	// 		m_vertexList[tri.m_index1].m_triangles.Remove(tri);
-    	// 		m_vertexList[tri.m_index2].m_triangles.Remove(tri);
-    	// 	}
-    	// 	else
-    	// 	{
-    	// 		m_effectTriangleList.Add(tri);
-    	// 	}
-    	// }
+    	// 修改三角形顶点
+    	foreach (GTriangle tri in m_effectTriangleList)
+    	{
+    		if (tri.m_index0 == m_edge.m_index1 || tri.m_index0 == m_edge.m_index2)
+    		{
+    			tri.m_index0 = newPtIndex;
+    		}
 
-    	// // 修改三角形顶点
-    	// foreach (GTriangle tri in m_effectTriangleList)
-    	// {
-    	// 	if (tri.m_index0 == m_edge.m_index1 || tri.m_index0 == m_edge.m_index2)
-    	// 	{
-    	// 		tri.m_index0 = newPtIndex;
-    	// 	}
+    		if (tri.m_index1 == m_edge.m_index1 || tri.m_index1 == m_edge.m_index2)
+    		{
+    			tri.m_index1 = newPtIndex;
+    		}
 
-    	// 	if (tri.m_index1 == m_edge.m_index1 || tri.m_index1 == m_edge.m_index2)
-    	// 	{
-    	// 		tri.m_index1 = newPtIndex;
-    	// 	}
+    		if (tri.m_index2 == m_edge.m_index1 || tri.m_index2 == m_edge.m_index2)
+    		{
+    			tri.m_index2 = newPtIndex;
+    		}
 
-    	// 	if (tri.m_index2 == m_edge.m_index1 || tri.m_index2 == m_edge.m_index2)
-    	// 	{
-    	// 		tri.m_index2 = newPtIndex;
-    	// 	}
+    		//更新平面的代价矩阵
+    		Vector3 p0 = GetVertices(tri.m_index0);
+    		Vector3 p1 = GetVertices(tri.m_index1);
+    		Vector3 p2 = GetVertices(tri.m_index2);
+    		tri.CalculateMatrix(p0, p1, p2);
+    	}
 
-    	// 	//更新平面的代价矩阵
-    	// 	Vector3 p0 = GetVertices(tri.m_index0);
-    	// 	Vector3 p1 = GetVertices(tri.m_index1);
-    	// 	Vector3 p2 = GetVertices(tri.m_index2);
-    	// 	tri.CalculateMatrix(p0, p1, p2);
-    	// }
+    	Debug.Log("effectTriangleList changed");
+    	foreach (GTriangle tri in m_effectTriangleList)
+    	{
+    		Debug.Log("tri : " + tri.m_index0 + "," + tri.m_index1 + "," + tri.m_index2);
+    	}
 
-    	// //更新顶点的代价矩阵
-    	// foreach (int i in m_effectTrianglesIndexList)
-    	// {
-    	// 	m_vertexList[i].CalculateMatrix();
-    	// }
+    	// 更新顶点的代价矩阵
+    	foreach (int i in m_effectTrianglesIndexList)
+    	{
+    		m_vertexList[i].CalculateMatrix();
+    	}
 
-    	// int lastIndex = m_edgeCount - m_frameIndex;
+    	// 更新边的代价矩阵
+    	int lastIndex = m_edgeCount - m_frameIndex;
+    	foreach (GEdge edge in m_effectEdgeList)
+    	{
+    		int index1 = edge.m_index1;
+    		int index2 = edge.m_index2;
 
-    	// //更新边的代价矩阵
-    	// foreach (GEdge edge in m_effectEdgeList)
-    	// {
-    	// 	int index1 = edge.m_index1;
-    	// 	int index2 = edge.m_index2;
+    		Vector3 p1 = GetVertices(index1);
+    		Vector3 p2 = GetVertices(index2);
 
-    	// 	Vector3 p1 = GetVertices(index1);
-    	// 	Vector3 p2 = GetVertices(index2);
+    		Matrix4x4 m1 = m_vertexList[index1].m_mat;
+    		Matrix4x4 m2 = m_vertexList[index2].m_mat;
 
-    	// 	Matrix4x4 m1 = m_vertexList[index1].m_mat;
-    	// 	Matrix4x4 m2 = m_vertexList[index2].m_mat;
+    		edge.CalculateCost(m1, m2, (p1+p2)*0.5f);
 
-    	// 	edge.CalculateCost(m1, m2, (p1+p2)*0.5f);
+    		//更新堆栈
+    		AdjustHeap(lastIndex, edge.m_index);
+    	}
 
-    	// 	//更新堆栈
-    	// 	AdjustHeap(lastIndex, edge.m_index);
-    	// }
+    	//最终赋值
+    	m_mesh.vertices = m_verticesList.ToArray();
+    	int[] vertexArray = new int[m_triangleList.Count * 3];
+    	int index = 0;
+    	foreach (GTriangle tri in m_triangleList)
+    	{
+    		vertexArray[index] = tri.m_index0;
+    		index++;
+    		vertexArray[index] = tri.m_index1;
+    		index++;
+    		vertexArray[index] = tri.m_index2;
+    		index++;
+    	}
 
-    	// m_mesh.vertices = m_verticesList.ToArray();
-
-    	// int[] vertexArray = new int[m_triangleList.Count * 3];
-    	// int index = 0;
-    	// foreach (GTriangle tri in m_triangleList)
-    	// {
-    	// 	vertexArray[index] = tri.m_index0;
-    	// 	index++;
-    	// 	vertexArray[index] = tri.m_index1;
-    	// 	index++;
-    	// 	vertexArray[index] = tri.m_index2;
-    	// 	index++;
-    	// }
-
-    	// m_mesh.triangles = vertexArray;
-    	// GetComponent<MeshFilter>().mesh = m_mesh;
-		
+    	m_mesh.triangles = vertexArray;
+    	GetComponent<MeshFilter>().mesh = m_mesh;
     	Debug.Log("m_edgeCount is " + m_edgeCount + " = " + m_frameIndex + " + " + m_edgeList.Count);
+    }
+
+    void TestCode()
+    {
     }
 
     // Update is called once per frame
