@@ -104,11 +104,6 @@ public class EdgeCollapse : MonoBehaviour
     		tri.CalculateMatrix(p0, p1, p2);
     		m_triangleList.Add(tri);
 
-    		if(index0 == 325 || index1 == 325 || index2 == 325)
-    		{
-    			Debug.Log("=====> " +index0+","+index1+","+index2);
-    		}
-
     		m_vertexList[index0].m_triangles.Add(tri);
     		m_vertexList[index1].m_triangles.Add(tri);
     		m_vertexList[index2].m_triangles.Add(tri);

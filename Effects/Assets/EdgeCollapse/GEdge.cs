@@ -66,5 +66,34 @@ public class GEdge
 		float w = m_mat[3,0]*m_pt.x + m_mat[3,1]*m_pt.y + m_mat[3,2]*m_pt.z + m_mat[3,3];
 		m_cost = m_pt.x*x + m_pt.y*y + m_pt.z*z + w;
 		// m_pt = m_pt*0.01f;
+
+		if(m_index1 == 308 && m_index2 == 307)
+		{
+			Debug.Log("=====================");
+			// Debug.Log(defaultPt.ToString("f4") + "," + invMat[3,3]);
+			Debug.Log(m_mat);
+			Debug.Log(derMat);
+			Debug.Log(invMat);
+			// Debug.Log(m_pt.ToString("f4"));
+			// Debug.Log("xyzw:"+x+","+y+","+z+","+w);
+
+			Debug.Log(derMat*invMat);
+
+			TestInv();
+			Debug.Log("=====================");
+		}
+
+	}
+
+	public void TestInv()
+	{
+		Debug.Log("=====================");
+		Matrix4x4 a = Matrix4x4.zero;
+		a[0,0] = 2;
+		a[1,1] = 4;
+		a[2,2] = 8;
+		a[3,3] = 1;
+		Matrix4x4 b = a.inverse;
+		Debug.Log(b);
 	}
 }
