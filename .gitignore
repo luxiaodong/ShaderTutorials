@@ -60,3 +60,6 @@ crashlytics-build.properties
 
 SourceURP/LocalPackages
 Effects/Logs
+Effects/Library
+*.
+.DS_Store
