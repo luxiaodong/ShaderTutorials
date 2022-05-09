@@ -4,6 +4,8 @@ Shader "Effect/Parallax"
         _Albedo ("Albedo", 2D) = "white" {}
         [NoScaleOffset] _Normal ("Normal", 2D) = "bump" {}
         _BumpScale ("Bump Scale", Float) = 1
+        [NoScaleOffset] _ParallaxMap ("Parallax", 2D) = "black" {}
+        _ParallaxStrength ("Parallax Strength", Range(0, 0.1)) = 0
     }
 
     SubShader
@@ -34,6 +36,7 @@ Shader "Effect/Parallax"
                 float3 TtoW1:TEXCOORD3;
 				float3 TtoW2:TEXCOORD4;
 				float3 TtoW3:TEXCOORD5;
+                float3 viewDirTS : TEXCOORD6;
             };
 
             TEXTURE2D(_Albedo);
@@ -41,6 +44,10 @@ Shader "Effect/Parallax"
             TEXTURE2D(_Normal);
             SAMPLER(sampler_Normal);
             float _BumpScale;
+
+            TEXTURE2D(_ParallaxMap);
+            SAMPLER(sampler_ParallaxMap);
+            float _ParallaxStrength;
 
             v2f vert(a2v i)
             {
@@ -56,13 +63,26 @@ Shader "Effect/Parallax"
                 o.TtoW1 = float3(tangentWS.x, binormalWS.x, normalWS.x);
                 o.TtoW2 = float3(tangentWS.y, binormalWS.y, normalWS.y);
                 o.TtoW3 = float3(tangentWS.z, binormalWS.z, normalWS.z);
+
+                float3 ObjectSpaceCameraPos = TransformWorldToObject(_WorldSpaceCameraPos);
+
+                float3 viewDirOS = normalize(ObjectSpaceCameraPos - i.positionOS.xyz);
+                float3x3 rotate = float3x3( i.tangentOS.xyz, cross(i.normalOS.xyz, i.tangentOS.xyz) * i.tangentOS.w, i.normalOS.xyz );
+                float3 viewDirTS = normalize(mul(rotate, viewDirOS));
+                o.viewDirTS = viewDirTS;
                 return o;
             }
 
             float4 frag (v2f i) : SV_TARGET 
             {
+                i.viewDirTS = normalize(i.viewDirTS);
+                i.viewDirTS.xy /= (i.viewDirTS.z + 0.42f);
+                float height = SAMPLE_TEXTURE2D(_ParallaxMap, sampler_ParallaxMap, i.uv.xy).r;
+                height -= 0.5f;
+                height *= _ParallaxStrength;
+                i.uv.xy += i.viewDirTS.xy * height;
+
                 float4 normalTS = SAMPLE_TEXTURE2D(_Normal, sampler_Normal, i.uv);
-                // float3 packedNormal = UnpackNormal(normalTS);
                 float3 packedNormal = UnpackNormalScale(normalTS, _BumpScale);
 
                 float3x3 rotate = float3x3(i.TtoW1, i.TtoW2, i.TtoW3);
