@@ -73,14 +73,87 @@ Shader "Effect/Parallax"
                 return o;
             }
 
+            float getParallaxHeight(float2 uv)
+            {
+                return SAMPLE_TEXTURE2D(_ParallaxMap, sampler_ParallaxMap, uv).r;
+            }
+
+            float2 parallaxOffset(float2 uv, float2 viewDir)
+            {
+                float height = getParallaxHeight(uv);
+                height -= 0.5f;
+                height *= _ParallaxStrength;
+                return viewDir * height;
+            }
+
+            // https://www.jianshu.com/p/98c137baf855
+
+            float2 parallaxSteep(float2 uv, float2 viewDir)
+            {
+                int stepCount = 10;
+                float stepSize = 1.0/stepCount;
+                float2 uvDelta = viewDir * stepSize * _ParallaxStrength;
+
+                // 起始点的含义
+                // float2 uvOffset = viewDir * _ParallaxStrength;
+                // float2 uvOffset = 0;
+                float2 uvOffset = viewDir * _ParallaxStrength / 2; 
+                int i = 0;
+
+                for(; i<stepCount; ++i)
+                {
+                    uvOffset -= uvDelta;
+                    float heightFromLayer = 1.0f - (i+1.0f)/stepCount;
+                    float heightFromMap = getParallaxHeight(uv + uvOffset);
+                    if(heightFromLayer < heightFromMap) break;
+                }
+
+                return uvOffset;
+            }
+
+            float2 parallaxOcclusion(float2 uv, float2 viewDir)
+            {
+                int stepCount = 10;
+                float stepSize = 1.0/stepCount;
+                float2 uvDelta = viewDir * stepSize * _ParallaxStrength;
+
+                // 起始点的含义
+                // float2 uvOffset = viewDir * _ParallaxStrength;
+                // float2 uvOffset = 0;
+                float2 uvOffset = viewDir * _ParallaxStrength / 2; 
+                int i = 0;
+
+                for(; i<stepCount; ++i)
+                {
+                    uvOffset -= uvDelta;
+                    float heightFromLayer = 1.0f - (i+1.0f)/stepCount;
+                    float heightFromMap = getParallaxHeight(uv + uvOffset);
+                    if(heightFromLayer < heightFromMap) break;
+                }
+
+                float a = 1.0f - i/stepCount;
+                float b = 1.0f - (i+1.0f)/stepCount;
+                float c = getParallaxHeight(uv + uvOffset + uvDelta);
+                float d = getParallaxHeight(uv + uvOffset);
+                float t = abs(a-c)/(abs(a-c)+abs(d-b));
+                return uvOffset + (1-t)*uvDelta;
+
+                // return uvOffset;
+            }
+
             float4 frag (v2f i) : SV_TARGET 
             {
                 i.viewDirTS = normalize(i.viewDirTS);
-                i.viewDirTS.xy /= (i.viewDirTS.z + 0.42f);
-                float height = SAMPLE_TEXTURE2D(_ParallaxMap, sampler_ParallaxMap, i.uv.xy).r;
-                height -= 0.5f;
-                height *= _ParallaxStrength;
-                i.uv.xy += i.viewDirTS.xy * height;
+                i.viewDirTS.xy /= (i.viewDirTS.z + 0.001f);
+                // float height = SAMPLE_TEXTURE2D(_ParallaxMap, sampler_ParallaxMap, i.uv.xy).r;
+                // height -= 0.5f;
+                // height *= _ParallaxStrength;
+                // i.uv.xy += i.viewDirTS.xy * height;
+
+                // float2 offset = parallaxOffset(i.uv.xy, i.viewDirTS.xy);
+                // float2 offset = parallaxSteep(i.uv.xy, i.viewDirTS.xy);
+                float2 offset = parallaxOcclusion(i.uv.xy, i.viewDirTS.xy);
+                i.uv.xy += offset;
 
                 float4 normalTS = SAMPLE_TEXTURE2D(_Normal, sampler_Normal, i.uv);
                 float3 packedNormal = UnpackNormalScale(normalTS, _BumpScale);
