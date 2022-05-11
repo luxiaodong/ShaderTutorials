@@ -58,7 +58,8 @@ Shader "Effect/Parallax"
                 o.uv = i.uv;
                 float3 positionWS = TransformObjectToWorld(i.positionOS.xyz);
                 float3 viewDirWS = _WorldSpaceCameraPos - positionWS;
-                float3 viewDirOS = TransformWorldToObjectDir(viewDirWS);
+                // 这里不能单位化,单位化相当于乘了一个缩放矩阵,先单位后转换 != 先转换后单位化
+                float3 viewDirOS = TransformWorldToObjectDir(viewDirWS, false);
                 float3x3 objectToTangent = float3x3( i.tangentOS.xyz, cross(i.normalOS, i.tangentOS.xyz) * i.tangentOS.w, i.normalOS);
                 o.viewDirTS = mul(objectToTangent, viewDirOS);
                 return o;
