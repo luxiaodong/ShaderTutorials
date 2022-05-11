@@ -141,6 +141,54 @@ Shader "Effect/Parallax"
                 // return uvOffset;
             }
 
+            float2 parallaxRelief(float2 uv, float2 viewDir)
+            {
+                int stepCount = 10;
+                float stepSize = 1.0/stepCount;
+                float2 uvDelta = viewDir * stepSize * _ParallaxStrength;
+
+                // 起始点的含义
+                // float2 uvOffset = viewDir * _ParallaxStrength;
+                float2 uvOffset = 0;
+                // float2 uvOffset = viewDir * _ParallaxStrength / 2; 
+                int i = 0;
+
+                for(; i<stepCount; ++i)
+                {
+                    uvOffset -= uvDelta;
+                    float heightFromLayer = 1.0f - (i+1.0f)/stepCount;
+                    float heightFromMap = getParallaxHeight(uv + uvOffset);
+                    if(heightFromLayer < heightFromMap) break;
+                }
+
+                float heightFromLayer = 1.0f - (i+1.0f)/stepCount;
+                i = 1;
+                float binaryStep = 0.5f;
+                int sign = 1;
+                while(i < 10)
+                {
+                    uvDelta = uvDelta*0.5;
+                    stepSize = stepSize*0.5;
+
+                    uvOffset += uvDelta*sign;
+                    heightFromLayer += stepSize*sign;
+
+                    float heightFromMap = getParallaxHeight(uv + uvOffset);
+                    if(heightFromMap < heightFromLayer)
+                    {
+                        sign = -1;
+                    }
+                    else
+                    {
+                        sign = 1;
+                    }
+
+                    i++;
+                }
+
+                return uvOffset;
+            }
+
             float4 frag (v2f i) : SV_TARGET 
             {
                 i.viewDirTS = normalize(i.viewDirTS);
@@ -152,7 +200,8 @@ Shader "Effect/Parallax"
 
                 // float2 offset = parallaxOffset(i.uv.xy, i.viewDirTS.xy);
                 // float2 offset = parallaxSteep(i.uv.xy, i.viewDirTS.xy);
-                float2 offset = parallaxOcclusion(i.uv.xy, i.viewDirTS.xy);
+                // float2 offset = parallaxOcclusion(i.uv.xy, i.viewDirTS.xy);
+                float2 offset = parallaxRelief(i.uv.xy, i.viewDirTS.xy);
                 i.uv.xy += offset;
 
                 float4 normalTS = SAMPLE_TEXTURE2D(_Normal, sampler_Normal, i.uv);
