@@ -30,13 +30,11 @@ Shader "Effect/Parallax"
 
             struct v2f {
                 float4 positionCS : SV_POSITION;
-                float3 positionWS : TEXCOORD0;
+                float2 uv : TEXCOORD0;
                 float3 normalWS : TEXCOORD1;
-                float2 uv : TEXCOORD2;
-                float3 TtoW1:TEXCOORD3;
-				float3 TtoW2:TEXCOORD4;
-				float3 TtoW3:TEXCOORD5;
-                float3 viewDirTS : TEXCOORD6;
+                float3 tangentWS : TEXCOORD2;
+                float3 binormalWS : TEXCOORD3;
+                float3 viewDirTS : TEXCOORD4;                
             };
 
             TEXTURE2D(_Albedo);
@@ -52,24 +50,17 @@ Shader "Effect/Parallax"
             v2f vert(a2v i)
             {
                 v2f o;
-                o.positionWS = TransformObjectToWorld(i.positionOS);
                 o.positionCS = TransformObjectToHClip(i.positionOS.xyz);
                 o.normalWS = TransformObjectToWorldNormal(i.normalOS);
+                o.tangentWS = TransformObjectToWorldDir(i.tangentOS.xyz);
+                o.binormalWS = cross(o.normalWS, o.tangentWS) * i.tangentOS.w;
+
                 o.uv = i.uv;
-                float3 normalWS = TransformObjectToWorldNormal(i.normalOS);
-                float3 tangentWS = normalize(TransformObjectToWorld(i.tangentOS));
-                float3 binormalWS = normalize(cross(normalWS, tangentWS))*i.tangentOS.z;
-
-                o.TtoW1 = float3(tangentWS.x, binormalWS.x, normalWS.x);
-                o.TtoW2 = float3(tangentWS.y, binormalWS.y, normalWS.y);
-                o.TtoW3 = float3(tangentWS.z, binormalWS.z, normalWS.z);
-
-                float3 ObjectSpaceCameraPos = TransformWorldToObject(_WorldSpaceCameraPos);
-
-                float3 viewDirOS = normalize(ObjectSpaceCameraPos - i.positionOS.xyz);
-                float3x3 rotate = float3x3( i.tangentOS.xyz, cross(i.normalOS.xyz, i.tangentOS.xyz) * i.tangentOS.w, i.normalOS.xyz );
-                float3 viewDirTS = normalize(mul(rotate, viewDirOS));
-                o.viewDirTS = viewDirTS;
+                float3 positionWS = TransformObjectToWorld(i.positionOS.xyz);
+                float3 viewDirWS = _WorldSpaceCameraPos - positionWS;
+                float3 viewDirOS = TransformWorldToObjectDir(viewDirWS);
+                float3x3 objectToTangent = float3x3( i.tangentOS.xyz, cross(i.normalOS, i.tangentOS.xyz) * i.tangentOS.w, i.normalOS);
+                o.viewDirTS = mul(objectToTangent, viewDirOS);
                 return o;
             }
 
@@ -191,7 +182,7 @@ Shader "Effect/Parallax"
 
             float4 frag (v2f i) : SV_TARGET 
             {
-                i.viewDirTS = normalize(i.viewDirTS);
+                // i.viewDirTS = normalize(i.viewDirTS);
                 i.viewDirTS.xy /= (i.viewDirTS.z + 0.001f);
                 // float height = SAMPLE_TEXTURE2D(_ParallaxMap, sampler_ParallaxMap, i.uv.xy).r;
                 // height -= 0.5f;
@@ -204,11 +195,18 @@ Shader "Effect/Parallax"
                 float2 offset = parallaxRelief(i.uv.xy, i.viewDirTS.xy);
                 i.uv.xy += offset;
 
-                float4 normalTS = SAMPLE_TEXTURE2D(_Normal, sampler_Normal, i.uv);
-                float3 packedNormal = UnpackNormalScale(normalTS, _BumpScale);
+                // float4 normalTS = SAMPLE_TEXTURE2D(_Normal, sampler_Normal, i.uv);
+                // float3 packedNormal = UnpackNormalScale(normalTS, _BumpScale);
+                // float3x3 rotate = float3x3(i.TtoW1, i.TtoW2, i.TtoW3);
+                // float3 normalWS = normalize(mul(rotate, packedNormal));
 
-                float3x3 rotate = float3x3(i.TtoW1, i.TtoW2, i.TtoW3);
-                float3 normalWS = normalize(mul(rotate, packedNormal));
+
+                float3 tangentSpaceNormal = UnpackNormalScale(SAMPLE_TEXTURE2D(_Normal, sampler_Normal, i.uv), _BumpScale);
+				float3 normalWS = normalize(
+					tangentSpaceNormal.x * i.tangentWS +
+					tangentSpaceNormal.y * i.binormalWS +
+					tangentSpaceNormal.z * i.normalWS
+				);
 
                 Light light = GetMainLight();
                 float3 ndotl = dot(normalWS, light.direction);
