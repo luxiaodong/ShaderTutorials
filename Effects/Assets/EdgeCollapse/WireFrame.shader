@@ -11,8 +11,11 @@ Shader "EdgeCollapse/WireFrame"
 
         Pass
         {
+            Tags{"LightMode" = "SRPDefaultUnlit"}
+
 			HLSLPROGRAM
-            #pragma target 4.0
+            // #pragma target 4.5
+            #pragma require geometry
             #pragma vertex vert
             #pragma fragment frag
             #pragma geometry geome
@@ -65,7 +68,6 @@ Shader "EdgeCollapse/WireFrame"
                 float minBary = min(i.barycentricCoordinates.x , min(i.barycentricCoordinates.y, i.barycentricCoordinates.z));
                 float delta = fwidth(minBary); // float delta = abs(ddx(minBary) + abs(ddy(minBary)));
                 float c = smoothstep(0, delta*_WireWidth, minBary);
-                // return float4(c,c,c,1.0f);
                 float3 color = lerp(_WireColor, float3(1,1,1), c);
                 return float4(color, 1.0);
             }
