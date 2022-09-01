@@ -3,6 +3,7 @@ Shader "EdgeCollapse/Tessellation"
     Properties {
         _WireColor ("WireColor", Color) = (0,0,0)
         _WireWidth ("WireWidth", Range(1,5)) = 1
+        _Factor ("Factor", Range(1,32)) = 1 
 	}
 
     SubShader
@@ -57,6 +58,7 @@ Shader "EdgeCollapse/Tessellation"
 
             float3 _WireColor;
             float _WireWidth;
+            float _Factor;
 
             v2t vert(a2v i)
             {
@@ -73,17 +75,17 @@ Shader "EdgeCollapse/Tessellation"
             tessFactor patchConstant (InputPatch<v2t, 3> patch) 
             {
                 tessFactor f;
-                f.edge[0] = 1;
-                f.edge[1] = 1;
-                f.edge[2] = 1;
-                f.inside = 1;
+                f.edge[0] = _Factor;
+                f.edge[1] = _Factor;
+                f.edge[2] = _Factor;
+                f.inside = _Factor;
                 return f;
             }
 
             [domain("tri")]
             [outputcontrolpoints(3)]
             [outputtopology("triangle_cw")]
-            [partitioning("integer")]
+            [partitioning("fractional_odd")]
             [patchconstantfunc("patchConstant")]
             v2t tessHull(InputPatch<v2t, 3> patch, uint id : SV_OutputControlPointID) 
             {
