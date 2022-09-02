@@ -1,9 +1,8 @@
-Shader "EdgeCollapse/Displacement"
+Shader "EdgeCollapse/Tessellation"
 {
     Properties {
-        _Albedo ("Albedo", 2D) = "white" {}
-        [NoScaleOffset] _NormalMap ("Normals", 2D) = "bump" {}
-        _BumpScale ("Bump Scale", Float) = 1
+        _WireColor ("WireColor", Color) = (0,0,0)
+        _WireWidth ("WireWidth", Range(1,5)) = 1
         _Factor ("Factor", Range(1,32)) = 1 
         _DisplacementMap ("Displacement", 2D) = "white" {}
         _DisplacementStrength ("Displacement Strength", Range(0, 1)) = 0.1
@@ -21,6 +20,7 @@ Shader "EdgeCollapse/Displacement"
             #pragma target 4.6
             #pragma require geometry
             #pragma vertex vert
+            #pragma geometry geome
             #pragma fragment frag
             #pragma hull tessHull
             #pragma domain tessDomain
@@ -29,24 +29,23 @@ Shader "EdgeCollapse/Displacement"
 
             struct a2v {
                 float4 positionOS : POSITION;
-                float4 tangentOS : TANGENT;
                 float3 normalOS : NORMAL;
                 float2 uv : TEXCOORD0;
             };
 
             struct v2t {
                 float4 positionOS : INTERNALTESSPOS;
-                float4 tangentOS : TANGENT;
                 float3 normalOS : NORMAL;
                 float2 uv : TEXCOORD1;
             };
 
-            struct t2f {
+            struct t2g {
                 float4 positionCS : SV_POSITION;
-                float3 normalWS : TEXCOORD0;
-                float2 uv : TEXCOORD1;
-                float3 tangentWS : TEXCOORD2;
-                float3 binormalWS : TEXCOORD3;
+            };
+
+            struct g2f {
+                float4 positionCS : SV_POSITION;
+                float3 barycentricCoordinates : TEXCOOR0;
             };
 
             struct tessFactor
@@ -55,23 +54,17 @@ Shader "EdgeCollapse/Displacement"
                 float inside : SV_InsideTessFactor;
             };
 
-            TEXTURE2D(_Albedo);
-            SAMPLER(sampler_Albedo);
-            TEXTURE2D(_Normal);
-            SAMPLER(sampler_Normal);
             sampler2D _DisplacementMap;
 
             float3 _WireColor;
             float _WireWidth;
             float _Factor;
             float _DisplacementStrength;
-            float _BumpScale;
 
             v2t vert(a2v i)
             {
                 v2t o;
                 o.positionOS = i.positionOS;
-                o.tangentOS = i.tangentOS;
                 o.normalOS = i.normalOS;
                 o.uv = i.uv;
                 return o;
@@ -98,9 +91,9 @@ Shader "EdgeCollapse/Displacement"
             }
 
             [domain("tri")]
-            t2f tessDomain( tessFactor factors, OutputPatch<v2t, 3> patch, float3 barycentricCoordinates : SV_DomainLocation) 
+            t2g tessDomain( tessFactor factors, OutputPatch<v2t, 3> patch, float3 barycentricCoordinates : SV_DomainLocation) 
             {
-                t2f o;
+                t2g o;
                 float2 uv = float2(0,0);
                 uv += patch[0].uv * barycentricCoordinates.x;
                 uv += patch[1].uv * barycentricCoordinates.y;
@@ -110,12 +103,6 @@ Shader "EdgeCollapse/Displacement"
                 normalOS += patch[0].normalOS * barycentricCoordinates.x;
                 normalOS += patch[1].normalOS * barycentricCoordinates.y;
                 normalOS += patch[2].normalOS * barycentricCoordinates.z;
-                normalOS = normalize(normalOS);
-
-                float4 tangentOS = float4(0,0,0,0);
-                tangentOS += patch[0].tangentOS * barycentricCoordinates.x;
-                tangentOS += patch[1].tangentOS * barycentricCoordinates.y;
-                tangentOS += patch[2].tangentOS * barycentricCoordinates.z;
 
                 float3 positionOS = float3(0,0,0);
                 positionOS += patch[0].positionOS.xyz * barycentricCoordinates.x;
@@ -124,31 +111,36 @@ Shader "EdgeCollapse/Displacement"
 
                 float displacement = tex2Dlod(_DisplacementMap, float4(uv, 0, 0)).g;
                 displacement = (displacement - 0.5f) * _DisplacementStrength;
-                positionOS.xyz += normalOS * displacement;
+                positionOS.xyz += normalize(normalOS) * displacement;
 
                 o.positionCS = TransformObjectToHClip(positionOS);
-                o.normalWS = TransformObjectToWorldNormal(normalOS);
-                o.tangentWS = TransformObjectToWorldDir(tangentOS.xyz);
-                o.binormalWS = cross(o.normalWS, o.tangentWS);
-                o.uv = uv;
                 return o;
             }
 
-            float4 frag (t2f i) : SV_TARGET 
+            [maxvertexcount(3)]
+            void geome(triangle t2g i[3], inout TriangleStream<g2f> stream)
             {
-                float3 tangentSpaceNormal = UnpackNormalScale(SAMPLE_TEXTURE2D(_Normal, sampler_Normal, i.uv), _BumpScale);
+                g2f g0,g1,g2;
+                g0.positionCS = i[0].positionCS;
+                g1.positionCS = i[1].positionCS;
+                g2.positionCS = i[2].positionCS;
+                g0.barycentricCoordinates = float3(1,0,0);
+                g1.barycentricCoordinates = float3(0,1,0);
+                g2.barycentricCoordinates = float3(0,0,1);
 
-                float3 normalWS = normalize(
-                    tangentSpaceNormal.x * i.tangentWS +
-                    tangentSpaceNormal.y * i.binormalWS +
-                    tangentSpaceNormal.z * i.normalWS
-                );
+                stream.Append(g0);
+                stream.Append(g1);
+                stream.Append(g2);
+                stream.RestartStrip();
+            }
 
-                Light light = GetMainLight();
-                float3 ndotl = dot(normalWS, light.direction);
-                float3 albedo = SAMPLE_TEXTURE2D(_Albedo, sampler_Albedo, i.uv);
-                float3 diffuse = albedo * max(0, ndotl).rgb;
-                return float4(diffuse, 1);
+            float4 frag (g2f i) : SV_TARGET 
+            {
+                float minBary = min(i.barycentricCoordinates.x , min(i.barycentricCoordinates.y, i.barycentricCoordinates.z));
+                float delta = fwidth(minBary);
+                float c = smoothstep(0, delta*_WireWidth, minBary);
+                float3 color = lerp(_WireColor, float3(1,1,1), c);
+                return float4(color, 1.0);
             }
 
             ENDHLSL
