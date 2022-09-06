@@ -1,4 +1,4 @@
-Shader "EdgeCollapse/Tessellation"
+Shader "EdgeCollapse/TerrainTessellation"
 {
     Properties {
         _WireColor ("WireColor", Color) = (0,0,0)
